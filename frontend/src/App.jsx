@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 
 // AUTOMATIC URL SWITCHING: Uses live backend URL in production, localhost in development
 const BACKEND_URL = import.meta.env.PROD
-  ? "https://onrender.com" // REPLACE THIS with your live Render/Railway URL later
+  ? "https://viseo-gof2.onrender.com" // REPLACE THIS with your live Render/Railway URL later
   : "http://localhost:5000";
 
 export default function App() {
