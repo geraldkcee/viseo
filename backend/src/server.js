@@ -12,7 +12,10 @@ const PORT = process.env.PORT || 5000;
 // Upgrade 2: Secure CORS to only allow your trusted frontend domain
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Change to match your Vite/React port
+    origin: [
+      process.env.FRONTEND_URL || "http://localhost:5173",
+      "https://viseo-sigma.vercel.app/",
+    ], // Change to match your Vite/React port
     methods: ["POST"],
     credentials: true,
   }),
@@ -91,12 +94,9 @@ app.post("/api/generate", apiLimiter, async (req, res) => {
       res.json(resultJson);
     } catch (parseError) {
       console.error("Failed to parse Gemini output as JSON:", response.text);
-      res
-        .status(502)
-        .json({
-          error:
-            "The AI engine returned an unreadable layout. Please try again.",
-        });
+      res.status(502).json({
+        error: "The AI engine returned an unreadable layout. Please try again.",
+      });
     }
   } catch (error) {
     console.error("Gemini API Error:", error);
