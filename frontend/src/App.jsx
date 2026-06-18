@@ -64,7 +64,7 @@ export default function App() {
       {/* Premium Minimal Header */}
       <header className="text-center my-8">
         <h1 className="text-2xl font-bold tracking-tight text-white uppercase">
-          Builders Growth Engine
+          Viseo Growth Engine
         </h1>
         <p className="text-xs text-slate-500 tracking-wide mt-1">
           4-Series Growth Strategies
