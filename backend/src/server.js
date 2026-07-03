@@ -16,14 +16,14 @@ if (!process.env.GEMINI_API_KEY) {
   );
 }
 
-// 🔒 Enhanced Whitelist Router Logic
+// 🔒 Enhanced Whitelist Router Logic (Fixed trailing slash bug)
 app.use(
   cors({
     origin: [
       process.env.FRONTEND_URL || "http://localhost:5173",
-      "https://viseo-sigma.vercel.app/", // Matches your production deployment directly
+      "https://viseo-sigma.vercel.app", // 💻 FIXED: Removed trailing slash to prevent CORS rejections
     ],
-    methods: ["POST", "OPTIONS"],
+    methods: ["POST", "GET", "OPTIONS"],
     credentials: true,
   }),
 );
@@ -46,11 +46,11 @@ const apiLimiter = rateLimit({
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// 🛠️ FIX FOR THE "<!DOCTYPE" MISMATCH: Handle base paths natively to avoid returning default HTML index pages
+// 🛠️ FIX FOR THE "<!DOCTYPE" MISMATCH: Moved check to base root to prevent routing conflicts
 app.get("/", (req, res) => {
   return res
     .status(200)
-    .json({ status: "Viseo API Engine online and functioning." });
+    .json({ status: "Viseo API Engine online and functioning flawlessly." });
 });
 
 app.post("/api/generate", apiLimiter, async (req, res) => {
@@ -65,7 +65,7 @@ app.post("/api/generate", apiLimiter, async (req, res) => {
 
   try {
     const systemPrompt = `You are an expert short-form content strategist and viral copywriter. 
-Your task is to take the raw topic or niche provided by the user and expand it into three distinct, high-retention content angles.`;
+Your task is to take the raw topic or niche provided by the user and expand it into three distinct, high-retention content angles. generate the output in a strict JSON format with three main objects: "controversial", "analogy", and "caseStudy". Each object should contain a "hook", "body", and "visualDirection" field. Ensure that the hooks are engaging, the bodies are concise and informative, and the visual directions are clear and actionable.`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -88,7 +88,7 @@ Your task is to take the raw topic or niche provided by the user and expand it i
                 body: {
                   type: Type.STRING,
                   description:
-                    "A compelling 3-sentence script body that delivers on the hook without being clickbait.",
+                    "A compelling 4-sentence script body that delivers on the hook without being clickbait.",
                 },
                 visualDirection: {
                   type: Type.STRING,

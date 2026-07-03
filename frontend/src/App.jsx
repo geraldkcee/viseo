@@ -234,8 +234,8 @@ export default function ContentGenerator() {
       {/* Production Minimalist Footer Component */}
       <footer className="w-full py-6 border-t border-zinc-200 bg-white mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-zinc-400">
-          <span>© 2024 Viseo Optimization Core. All rights reserved.</span>
-          <span>Built with ❤️ by the Viseo Team.</span>
+          <span>© 2026 Viseo Optimization Core. All rights reserved.</span>
+          <span>Built by Nwa_Ugwuanyi.</span>
         </div>
       </footer>
     </div>
