@@ -16,7 +16,7 @@ export default function ContentGenerator() {
 
     try {
       const backendUrl =
-        import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+        import.meta.env.VITE_BACKEND_URL || "https://viseo-gof2.onrender.com";
 
       const response = await fetch(`${backendUrl}/api/generate`, {
         method: "POST",
