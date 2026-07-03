@@ -1,178 +1,242 @@
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 
-// AUTOMATIC URL SWITCHING: Uses live backend URL in production, localhost in development
-const BACKEND_URL = import.meta.env.PROD
-  ? "https://viseo-gof2.onrender.com" // REPLACE THIS with your live Render/Railway URL later
-  : "http://localhost:5000";
-
-export default function App() {
+export default function ContentGenerator() {
   const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState(null);
+  const [contentPack, setContentPack] = useState(null);
   const [error, setError] = useState("");
-  const [copiedIndex, setCopiedIndex] = useState(null);
 
-  // Track timestamps to block rapid button clicks / spamming
-  const lastSubmitTime = useRef(0);
-
-  const generateIdeas = async (e) => {
+  const handleGenerate = async (e) => {
     e.preventDefault();
     if (!topic.trim()) return;
 
-    // ANTI-SPAM PROTECTION: Blocks request if button is clicked within 1.5 seconds of the last click
-    const currentTime = Date.now();
-    if (currentTime - lastSubmitTime.current < 1500 || loading) {
-      return;
-    }
-    lastSubmitTime.current = currentTime;
-
     setLoading(true);
     setError("");
-    setResults(null);
-    setCopiedIndex(null);
+    setContentPack(null);
 
     try {
-      const response = await fetch(`${BACKEND_URL}/api/generate`, {
+      const backendUrl =
+        import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+
+      const response = await fetch(`${backendUrl}/api/generate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ topic }),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ topic: topic.trim() }),
       });
 
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Something went wrong");
+      // 🛡️ JSON Safety Check: Stop the process early if the response returned raw HTML error pages
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const textFallback = await response.text();
+        console.error("HTML Intercepted:", textFallback);
+        throw new Error(
+          "Server returned an invalid HTML document layout instead of data. Verify your api routes.",
+        );
+      }
 
-      setResults(data);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Content generation failed.");
+      }
+
+      setContentPack(data.data);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || "An unexpected communication error occurred.");
     } finally {
       setLoading(false);
     }
   };
 
-  const copyToClipboard = async (text, index) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedIndex(index);
-      setTimeout(() => setCopiedIndex(null), 2000);
-    } catch (err) {
-      console.error("Failed to copy text: ", err);
-    }
+  const copyToClipboard = (text, e) => {
+    navigator.clipboard.writeText(text);
+    const originalText = e.target.innerHTML;
+    e.target.innerHTML = "Copied ✓";
+    setTimeout(() => {
+      e.target.innerHTML = originalText;
+    }, 2000);
   };
 
   return (
-    <div className="min-h-screen bg-[#121212] text-slate-200 flex flex-col justify-between p-5 font-sans">
-      {/* Premium Minimal Header */}
-      <header className="text-center my-8">
-        <h1 className="text-2xl font-bold tracking-tight text-white uppercase">
-          Viseo Growth Engine
-        </h1>
-        <p className="text-xs text-slate-500 tracking-wide mt-1">
-          4-Series Growth Strategies
-        </p>
-      </header>
+    <div className="min-h-screen bg-[#fafafa] text-zinc-900 flex flex-col justify-between font-sans antialiased">
+      {/* Main Structural Layout Container */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 flex flex-col items-center">
+        {/* Responsive Typography Header Section */}
+        <div className="text-center max-w-xl mb-10 sm:mb-14">
+          <span className="text-xs font-semibold tracking-wider text-zinc-500 uppercase bg-zinc-100 px-3 py-1 rounded-full border border-zinc-200">
+            Viseo Optimization Core
+          </span>
+          <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-950">
+            Expand Your Content Strategy
+          </h1>
+          <p className="mt-3 text-xs sm:text-sm text-zinc-600 leading-relaxed">
+            Input a single niche or topic to instantly draft structured
+            short-form script frameworks tailored for audience retention.
+          </p>
+        </div>
 
-      {/* Main Container */}
-      <main className="flex-1 max-w-sm mx-auto w-full space-y-6">
-        {/* Input Form - Clean Utility Styling */}
+        {/* Responsive Dynamic Input Form Grid */}
         <form
-          onSubmit={generateIdeas}
-          className="space-y-4 bg-[#1a1a1a] p-5 rounded-xl border border-neutral-800"
+          onSubmit={handleGenerate}
+          className="w-full max-w-xl flex flex-col sm:flex-row gap-2.5 mb-12 sm:mb-16"
         >
-          <div>
-            <label
-              htmlFor="topic"
-              className="block text-xs font-medium text-neutral-400 uppercase tracking-wider mb-2"
-            >
-              Content Pillar / Topic Idea
-            </label>
-            <input
-              id="topic"
-              type="text"
-              value={topic}
-              onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g., AI tools for content creation"
-              className="w-full bg-[#242424] border border-neutral-800 rounded-lg py-3 px-3.5 text-sm focus:outline-none focus:border-neutral-500 transition-colors text-white placeholder:text-neutral-600"
-            />
-          </div>
-
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="e.g., Personal finance tips, Real estate scaling..."
+            className="w-full sm:flex-1 px-4 py-2.5 bg-white border border-zinc-300 rounded-lg text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:border-zinc-950 shadow-sm transition"
+            disabled={loading}
+          />
           <button
             type="submit"
             disabled={loading || !topic.trim()}
-            className="w-full bg-white hover:bg-neutral-200 text-black font-semibold py-3 rounded-lg transition-colors active:scale-[0.99] disabled:opacity-30 disabled:pointer-events-none text-xs uppercase tracking-widest"
+            className="w-full sm:w-auto px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-medium text-sm rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-950 focus:ring-offset-2 disabled:opacity-40 disabled:hover:bg-zinc-900 disabled:cursor-not-allowed transition shadow-sm whitespace-nowrap"
           >
-            {loading ? "Processing Prompt..." : "Generate 4 Outlines"}
+            {loading ? "Processing..." : "Generate Scripts"}
           </button>
         </form>
 
-        {/* System Error Logs */}
+        {/* Error Feedback Display Banner */}
         {error && (
-          <div className="bg-red-950/40 border border-red-900/50 text-red-400 p-3 rounded-lg text-xs text-center">
-            {error}
+          <div className="w-full max-w-xl p-3.5 mb-10 bg-red-50 border border-red-200 rounded-lg text-red-800 text-xs flex flex-col gap-1 shadow-sm">
+            <span className="font-bold">System Feedback Notice:</span>
+            <p className="text-red-700 font-mono break-all">{error}</p>
           </div>
         )}
 
-        {/* Results Interface */}
-        {results && (
-          <div className="space-y-4">
-            <h2 className="text-xs font-bold uppercase tracking-widest text-neutral-500 pl-1">
-              Outlines Produced
-            </h2>
-
-            <div className="space-y-4">
-              {results.series?.map((item, index) => (
-                <div
-                  key={index}
-                  className="bg-[#1a1a1a] border border-neutral-800 p-4 rounded-xl space-y-4"
-                >
-                  {/* Card Header Row */}
-                  <div className="flex items-center justify-between border-b border-neutral-800 pb-2">
-                    <span className="text-xs font-mono tracking-wider text-neutral-400">
-                      [0{index + 1}] CONCEPT
-                    </span>
-                    <button
-                      onClick={() => copyToClipboard(item.hook, index)}
-                      className="text-[11px] font-mono text-neutral-400 hover:text-white transition-colors"
-                    >
-                      {copiedIndex === index ? "✓ COPIED" : "[ COPY HOOK ]"}
-                    </button>
-                  </div>
-
-                  {/* Hook Display */}
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-600 block">
-                      Hook Variant
-                    </span>
-                    <p className="text-sm font-normal text-neutral-200 leading-relaxed">
-                      {item.hook}
-                    </p>
-                  </div>
-
-                  {/* Hashtags Display */}
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-neutral-600 block">
-                      Target Indexes
-                    </span>
-                    <div className="flex flex-wrap gap-x-2 gap-y-1">
-                      {item.hashtags?.map((tag, tIdx) => (
-                        <span
-                          key={tIdx}
-                          className="text-xs font-mono text-neutral-400"
-                        >
-                          {tag.startsWith("#") ? tag : `#${tag}`}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+        {/* Completely Responsive Flex-Grid Matrix for 3 content components */}
+        {contentPack && (
+          <div className="w-full grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in">
+            {/* Angle 1: Controversial */}
+            <div className="bg-white border border-zinc-200 rounded-xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md hover:border-zinc-300 transition duration-200">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                    Angle 01
+                  </span>
+                  <span className="text-[11px] font-medium bg-zinc-100 text-zinc-800 px-2 py-0.5 rounded border border-zinc-200">
+                    The Rule Breaker
+                  </span>
                 </div>
-              ))}
+                <h3 className="mt-4 text-base sm:text-lg font-semibold text-zinc-950 leading-snug">
+                  "{contentPack.controversial.hook}"
+                </h3>
+                <p className="mt-3 text-zinc-600 text-xs leading-relaxed">
+                  {contentPack.controversial.body}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-zinc-100">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                  Visual Blueprint:
+                </span>
+                <p className="text-xs text-zinc-700 bg-zinc-50/50 p-3 rounded-lg border border-zinc-200/60 font-mono text-[11px] leading-normal">
+                  {contentPack.controversial.visualDirection}
+                </p>
+                <button
+                  onClick={(e) =>
+                    copyToClipboard(
+                      `HOOK: ${contentPack.controversial.hook}\n\nBODY: ${contentPack.controversial.body}`,
+                      e,
+                    )
+                  }
+                  className="mt-4 w-full py-2 bg-white hover:bg-zinc-50 text-zinc-800 font-medium text-xs rounded-lg transition border border-zinc-300 shadow-sm active:bg-zinc-100"
+                >
+                  Copy Text Blueprint
+                </button>
+              </div>
+            </div>
+
+            {/* Angle 2: Analogy */}
+            <div className="bg-white border border-zinc-200 rounded-xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md hover:border-zinc-300 transition duration-200">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                    Angle 02
+                  </span>
+                  <span className="text-[11px] font-medium bg-zinc-100 text-zinc-800 px-2 py-0.5 rounded border border-zinc-200">
+                    The ELI5 Explainer
+                  </span>
+                </div>
+                <h3 className="mt-4 text-base sm:text-lg font-semibold text-zinc-950 leading-snug">
+                  "{contentPack.analogy.hook}"
+                </h3>
+                <p className="mt-3 text-zinc-600 text-xs leading-relaxed">
+                  {contentPack.analogy.body}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-zinc-100">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                  Visual Blueprint:
+                </span>
+                <p className="text-xs text-zinc-700 bg-zinc-50/50 p-3 rounded-lg border border-zinc-200/60 font-mono text-[11px] leading-normal">
+                  {contentPack.analogy.visualDirection}
+                </p>
+                <button
+                  onClick={(e) =>
+                    copyToClipboard(
+                      `HOOK: ${contentPack.analogy.hook}\n\nBODY: ${contentPack.analogy.body}`,
+                      e,
+                    )
+                  }
+                  className="mt-4 w-full py-2 bg-white hover:bg-zinc-50 text-zinc-800 font-medium text-xs rounded-lg transition border border-zinc-300 shadow-sm active:bg-zinc-100"
+                >
+                  Copy Text Blueprint
+                </button>
+              </div>
+            </div>
+
+            {/* Angle 3: Case Study */}
+            <div className="bg-white border border-zinc-200 rounded-xl p-6 flex flex-col justify-between shadow-sm hover:shadow-md hover:border-zinc-300 transition duration-200">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">
+                    Angle 03
+                  </span>
+                  <span className="text-[11px] font-medium bg-zinc-100 text-zinc-800 px-2 py-0.5 rounded border border-zinc-200">
+                    The Proof Hack
+                  </span>
+                </div>
+                <h3 className="mt-4 text-base sm:text-lg font-semibold text-zinc-950 leading-snug">
+                  "{contentPack.caseStudy.hook}"
+                </h3>
+                <p className="mt-3 text-zinc-600 text-xs leading-relaxed">
+                  {contentPack.caseStudy.body}
+                </p>
+              </div>
+              <div className="mt-6 pt-4 border-t border-zinc-100">
+                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
+                  Visual Blueprint:
+                </span>
+                <p className="text-xs text-zinc-700 bg-zinc-50/50 p-3 rounded-lg border border-zinc-200/60 font-mono text-[11px] leading-normal">
+                  {contentPack.caseStudy.visualDirection}
+                </p>
+                <button
+                  onClick={(e) =>
+                    copyToClipboard(
+                      `HOOK: ${contentPack.caseStudy.hook}\n\nBODY: ${contentPack.caseStudy.body}`,
+                      e,
+                    )
+                  }
+                  className="mt-4 w-full py-2 bg-white hover:bg-zinc-50 text-zinc-800 font-medium text-xs rounded-lg transition border border-zinc-300 shadow-sm active:bg-zinc-100"
+                >
+                  Copy Text Blueprint
+                </button>
+              </div>
             </div>
           </div>
         )}
       </main>
 
-      {/* Required Footer Details */}
-      <footer className="text-center font-mono text-[10px] text-neutral-600 my-8 space-y-1">
-        <div>built by Kelechi to builders</div>
+      {/* Production Minimalist Footer Component */}
+      <footer className="w-full py-6 border-t border-zinc-200 bg-white mt-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs text-zinc-400">
+          <span>© 2024 Viseo Optimization Core. All rights reserved.</span>
+          <span>Built with ❤️ by the Viseo Team.</span>
+        </div>
       </footer>
     </div>
   );
