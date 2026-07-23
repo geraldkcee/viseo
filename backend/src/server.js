@@ -9,19 +9,17 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Explicit Environment Sanity Check
 if (!process.env.GEMINI_API_KEY) {
   console.error(
-    "❌ SETUP FAILED: GEMINI_API_KEY environment variable missing from system environments.",
+    " SETUP FAILED: GEMINI_API_KEY environment variable missing from system environments.",
   );
 }
 
-// 🔒 Enhanced Whitelist Router Logic (Fixed trailing slash bug)
 app.use(
   cors({
     origin: [
       process.env.FRONTEND_URL || "http://localhost:5173",
-      "https://viseo-sigma.vercel.app", // 💻 FIXED: Removed trailing slash to prevent CORS rejections
+      "https://viseo-sigma.vercel.app",
     ],
     methods: ["POST", "GET", "OPTIONS"],
     credentials: true,
@@ -30,10 +28,9 @@ app.use(
 
 app.use(express.json());
 
-// Defensive Operations: Enforce strict API limit parameter constraints
 const apiLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000, // 1 minute window
-  max: 5, // Max 5 requests per minute per IP address
+  windowMs: 1 * 60 * 1000,
+  max: 5, // Max 5 requests per minute
   handler: (req, res) => {
     return res.status(429).json({
       error:
@@ -46,7 +43,6 @@ const apiLimiter = rateLimit({
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
-// 🛠️ FIX FOR THE "<!DOCTYPE" MISMATCH: Moved check to base root to prevent routing conflicts
 app.get("/", (req, res) => {
   return res
     .status(200)
@@ -72,7 +68,7 @@ Your task is to take the raw topic or niche provided by the user and expand it i
       contents: `User Topic to expand: "${topic.trim()}"`,
       config: {
         systemInstruction: systemPrompt,
-        temperature: 0.75, // Keeps JSON delivery structurally accurate
+        temperature: 0.75,
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -172,7 +168,6 @@ Your task is to take the raw topic or niche provided by the user and expand it i
   }
 });
 
-// 🛠️ CATCH-ALL ROUTE FIX: Prevents returning standard HTML 404 pages when an invalid path is hit
 app.use((req, res) => {
   return res.status(404).json({
     error:
